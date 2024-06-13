@@ -10,33 +10,39 @@ import (
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
 
-// type Server struct {
-// 	Rooms map[string]*Room
-// }
+var upgrader = websocket.Upgrader{} // use default options
 
-//handle the WebSocket protocol upgrade.
-var upgrader = websocket.Upgrader{}
-
-
-func HandleConnections(w http.ResponseWriter, r *http.Request) {
+func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	//calls the Upgrader.Upgrade method from an HTTP request handler to get a *Conn
-    c, err := upgrader.Upgrade(w, r, nil)
-    if err != nil {
-        log.Print("upgrade:", err)
-        return
-    }
-	// Log client connection
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("upgrade:", err)
+		return
+	}
+	
     log.Printf("Client connected: %s", c.RemoteAddr().String()) 
-    defer c.Close()
-    log.Printf("Client disconnected: %s", c.RemoteAddr().String()) // Log client disconnection
-}
 
+	for {
+		_, msg, err := c.ReadMessage()
+		if err != nil {
+			log.Println("read:", err)
+			break
+		}
+		log.Printf("Received message from client: %s", msg)
+
+		err = c.WriteMessage(websocket.TextMessage, msg)
+		if err != nil {
+			log.Println("write:", err)
+			break
+		}
+	}
+	
+    log.Printf("Client disconnected: %s", c.RemoteAddr().String())
+}
 
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
-	http.HandleFunc("/echo", HandleConnections)
-	http.HandleFunc("/", HandleConnections)
+	http.HandleFunc("/", HandleConnection)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
-
