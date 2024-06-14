@@ -12,6 +12,13 @@ var addr = flag.String("addr", "localhost:8080", "http service address")
 
 var upgrader = websocket.Upgrader{} // use default options
 
+type Client struct {
+	name string
+	room *Room
+	conn *websocket.Conn
+	send chan []byte
+}
+
 type Server struct {
 	clients    map[*websocket.Conn]*Client
 	rooms      map[string]*Room
@@ -78,6 +85,15 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	
     log.Printf("Client disconnected: %s", c.RemoteAddr().String())
+}
+
+func (s *Server) listRoom() string {
+	var roomList string
+	for i, room := range s.rooms {
+		roomList += i + room.name + "\n"
+	}
+
+	return roomList
 }
 
 func main() {
