@@ -14,13 +14,6 @@ import (
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
 
-type Client struct {
-	name string
-	room *Room
-	conn *websocket.Conn
-	send chan []byte
-}
-
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
