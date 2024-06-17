@@ -1,4 +1,4 @@
-module github.com/hoangnguyen2809/chat-room
+module github.com/hoangnguyen2809/webchat
 
 go 1.22.3
 
