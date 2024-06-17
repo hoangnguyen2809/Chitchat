@@ -38,9 +38,12 @@ func NewServer() *Server {
 	}
 }
 
-func (s *Server) CreateRoom(name string) *Room {
-	room := NewRoom(name)
+func (s *Server) CreateRoom(name string, client *Client, password string) *Room {
+	room := NewRoom(name, client, password)
 	s.rooms[room.id] = room
+	room.register <- client
+	room.broadcast <- []byte(client.name + " has joined the room")
+	log.Printf("Room created: %s", room.id)
 	go room.Run()
 	return room
 }
@@ -68,17 +71,48 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		log.Print("upgrade:", err)
 		return
 	}
+	//defer the closing of the connection
+	defer c.Close()
+
 
     log.Printf("Client connected: %s", c.RemoteAddr().String()) 
-	err = c.WriteMessage(websocket.TextMessage, []byte("Welcome to the chat server! \n Please enter your name:"))
+	err = c.WriteMessage(websocket.TextMessage, []byte("Welcome to the chat server!\nPlease enter your name:"))
 	if err != nil {
 		log.Println("write:", err)
 	}
+	
 	_, msg, err := c.ReadMessage()
+	if err != nil {
+		log.Println("read:", err)
+		return
+	}
 	log.Printf("Received client's username: %s", msg)
-	client := &Client{name: string(msg), conn: c, send: make(chan []byte, 256)}
+	clientName := string(msg)
+	if (clientName == "") {
+		clientName = "Anonymous"
+	}
+	client := &Client{name: clientName, conn: c, send: make(chan []byte, 256)}
 	s.register <- client
 
+	//defer the unregistering of the client
+	defer func() {
+		s.unregister <- client
+		log.Printf("Client disconnected: %s", c.RemoteAddr().String())
+	}()
+
+	welcomeMsg := []byte("Welcome " + client.name + "!\n" +
+		"List of commands:\n" +
+		"1. /list clients - List all clients\n" +
+		"2. /list rooms - List all rooms\n" +
+		"3. /create - Create a room\n" +
+		"4. /join <room_id> - Join a room\n" + 
+		"(This message is only shown once. Type /help to see it again)")
+	err = c.WriteMessage(websocket.TextMessage, welcomeMsg)
+	if err != nil {
+		log.Println("write:", err)
+		return
+	}
+	
 	// loop to read messages from the client 
 	for {
 		_, msg, err := c.ReadMessage()
@@ -86,30 +120,42 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			log.Println("read:", err)
 			break
 		}
-		log.Printf("Received message from client: %s", msg)
+		log.Printf("Received message from %s: %s", client.name ,msg)
 
 		//handle the message
 		switch string(msg) {
-		case "list rooms":
+		case "/help":
+			err = c.WriteMessage(websocket.TextMessage, []byte(s.help()))
+		case "/list rooms":
 			err = c.WriteMessage(websocket.TextMessage, []byte(s.listRoom()))
-			if err != nil {
-				log.Println("write:", err)
-			}
-		case "list clients":
+		case "/list clients":
 			err = c.WriteMessage(websocket.TextMessage, []byte(s.listClients(client)))
+		case "/create":
+			err = c.WriteMessage(websocket.TextMessage, []byte("Enter password  : "))
+			_, msg, err = c.ReadMessage()
 			if err != nil {
-				log.Println("write:", err)
+				log.Println("read:", err)
+				break
 			}
-		}
-		// err = c.WriteMessage(websocket.TextMessage, msg)
-		// if err != nil {
-		// 	log.Println("write:", err)
-		// 	break
-		// }
-	}
 
-	s.unregister <- client
-    log.Printf("Client disconnected: %s", c.RemoteAddr().String())
+			room := s.CreateRoom(client.name, client, string(msg))
+			err = c.WriteMessage(websocket.TextMessage, []byte("Room created: "+room.id))
+		default:
+			err = c.WriteMessage(websocket.TextMessage, []byte("Unknown command: "+string(msg)))
+		}
+		if err != nil {
+			log.Println("write:", err)
+			break
+		}
+	}
+}
+
+func (s *Server) help() string {
+	return "List of commands:\n" +
+		"1. /list rooms - List all rooms\n" +
+		"2. /list clients - List all clients\n" +
+		"3. /create - Create a room\n" +
+		"4. /join <room_id> - Join a room\n"
 }
 
 func (s *Server) listRoom() string {
@@ -136,6 +182,18 @@ func (s *Server) listClients(client *Client) string {
 	return clientList
 }
 
+func (s *Server) clientStat() string {
+	clientCount := len(s.clients)
+	clientList := fmt.Sprintf("There are currently %d clients connected:\n", clientCount)
+
+	for _, c := range s.clients {
+		clientList += fmt.Sprintf("%-20s %s\n", c.name, c.conn.RemoteAddr().String())
+	}
+
+	return clientList
+}
+
+
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
@@ -159,7 +217,9 @@ func main() {
 		case "list rooms":
 			log.Println(server.listRoom())
 		case "list clients":
-			log.Println(server.listClients(nil))
+			log.Println(server.clientStat())
 		}
+		
+			
 	}
 }
