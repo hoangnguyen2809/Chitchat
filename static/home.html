@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
+        rel="stylesheet">
+    <title>Chat Home</title>
+    <style>
+        body {
+            font-family: "Roboto Mono", monospace;
+            background-color: #010409;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin: 2vh;
+            user-select: none;
+            text-align: center;
+        }
+
+        .chit {
+            color: #1b4b4b;
+        }
+
+        .chat {
+            color: #5a293c;
+        }
+
+        .live {
+            color: #5f1011;
+        }
+
+        .box {
+            color: #210d41;
+        }
+
+        #main-container {
+            width: 60%;
+            height: 80vh;
+            padding: 10px 20px;
+            background-color: #101414;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin: 0 auto;
+        }
+
+        #chatbox {
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        #log {
+            width: 100%;
+            height: 80%;
+            overflow-y: auto;
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 5px;
+            background: #181c24;
+        }
+
+        #form {
+            width: 100%;
+            margin-top: 20px;
+            display: flex;
+        }
+
+        #msg {
+            flex-grow: 1;
+            margin: 0 10px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #form input[type="text"]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1><span class="chit">Chit</span><span class="chat">chat</span></h1>
+    <div id="main-container">
+        <h2><span class="live">LIVE</span> <span class="box">BOX</span></h2>
+
+        <div id="log"></div>
+        <form id="form">
+            <!-- <button type="stop">Stop</button> -->
+            <input type="text" id="msg" size="64" />
+            <input type="submit" value="Send" />
+        </form>
+
+    </div>
+
+    <script>
+
+    </script>
+</body>
+
+</html>
