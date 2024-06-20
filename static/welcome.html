@@ -63,26 +63,11 @@
     </div>
 
     <script>
-        var users = 0;
-        var stat = document.getElementById('stat');
-        ws = new WebSocket("ws://" + window.location.host + "/ws");
-
         document.getElementById('welcome-form').addEventListener('submit', function (event) {
             event.preventDefault();
             const username = document.getElementById('username').value;
-            if (ws) {
-                return false;
-            }
-            ws = newWebSocket("{{.}}");
-            ws.onopen = function () {
-                ws.send(username);
-                window.location.href = "/home.html";
-            };
-            ws.onclose = function () {
-                ws = null;
-            };
-
-            return false;
+            localStorage.setItem('username', username);
+            window.location.href = "/chatbox.html";
         });
     </script>
 </body>

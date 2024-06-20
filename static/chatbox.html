@@ -108,7 +108,49 @@
     </div>
 
     <script>
+        let ws;
+        const username = localStorage.getItem('username');
+        if (username) {
+            ws = new WebSocket("ws://" + window.location.host + "/ws");
 
+            ws.onopen = function () {
+                ws.send(JSON.stringify({ type: "username", name: username }));
+                console.log("WebSocket connection established");
+                console.log("Username: " + username);
+            };
+
+            ws.onmessage = function (event) {
+                const log = document.getElementById('log');
+                const message = document.createElement('div');
+                message.textContent = event.data;
+                log.appendChild(message);
+            };
+            ws.onclose = function (event) {
+                if (!event.wasClean) {
+                    console.log("WebSocket connection closed unexpectedly");
+                } else {
+                    console.log("WebSocket connection closed");
+                }
+            };
+
+            document.getElementById('form').addEventListener('submit', function (event) {
+                event.preventDefault();
+                const msg = document.getElementById('msg').value;
+                ws.send(JSON.stringify({ type: "message", text: msg }));
+                document.getElementById('msg').value = '';
+            });
+
+
+            document.getElementById('form').addEventListener('submit', function (event) {
+                event.preventDefault();
+                const msg = document.getElementById('msg').value;
+                ws.send(JSON.stringify({ type: "message", text: msg }));
+                document.getElementById('msg').value = '';
+            });
+
+        } else {
+            window.location.href = "/";
+        }
     </script>
 </body>
 
