@@ -39,11 +39,10 @@ func NewServer() *Server {
 }
 
 func (s *Server) CreateRoom(name string, client *Client, password string) *Room {
-	room := NewRoom(name, client, password)
-	s.rooms[room.id] = room
+	room := NewRoom(name)
 	room.register <- client
 	room.broadcast <- []byte(client.name + " has joined the room")
-	log.Printf("Room created: %s", room.id)
+	log.Printf("Room created")
 	go room.Run()
 	return room
 }
@@ -123,63 +122,11 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Received message from %s: %s", client.name ,msg)
 
 		//handle the message
-		switch string(msg) {
-		case "/help":
-			err = c.WriteMessage(websocket.TextMessage, []byte(s.help()))
-		case "/list rooms":
-			err = c.WriteMessage(websocket.TextMessage, []byte(s.listRoom()))
-		case "/list clients":
-			err = c.WriteMessage(websocket.TextMessage, []byte(s.listClients(client)))
-		case "/create":
-			err = c.WriteMessage(websocket.TextMessage, []byte("Enter password  : "))
-			_, msg, err = c.ReadMessage()
-			if err != nil {
-				log.Println("read:", err)
-				break
-			}
-
-			room := s.CreateRoom(client.name, client, string(msg))
-			err = c.WriteMessage(websocket.TextMessage, []byte("Room created: "+room.id))
-		default:
-			err = c.WriteMessage(websocket.TextMessage, []byte("Unknown command: "+string(msg)))
-		}
 		if err != nil {
 			log.Println("write:", err)
 			break
 		}
 	}
-}
-
-func (s *Server) help() string {
-	return "List of commands:\n" +
-		"1. /list rooms - List all rooms\n" +
-		"2. /list clients - List all clients\n" +
-		"3. /create - Create a room\n" +
-		"4. /join <room_id> - Join a room\n"
-}
-
-func (s *Server) listRoom() string {
-	var roomList string
-	for i, room := range s.rooms {
-		roomList += i + room.name + "\n"
-	}
-
-	return roomList
-}
-
-func (s *Server) listClients(client *Client) string {
-	clientCount := len(s.clients)
-	clientList := fmt.Sprintf("There are currently %d clients connected:\n", clientCount)
-
-	for _, c := range s.clients {
-		if client != nil && c == client {
-			clientList += c.name + " (You)\n"
-		} else {
-			clientList += c.name + "\n"
-		}
-	}
-
-	return clientList
 }
 
 func (s *Server) clientStat() string {
@@ -199,7 +146,15 @@ func main() {
 	log.SetFlags(0)
 	server := NewServer()
 	go server.Run()
-	http.HandleFunc("/", server.HandleConnection)
+	http.HandleFunc("/ws", server.HandleConnection)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			http.ServeFile(w, r, "./static/welcome.html")
+		} else {
+			http.FileServer(http.Dir("./static")).ServeHTTP(w, r)
+		}
+	})
+
 	log.Printf("Starting server on %s", *addr)
 	go func ()  {
 		err := (http.ListenAndServe(*addr, nil))
@@ -214,12 +169,8 @@ func main() {
 	for scanner.Scan() {
 		text := scanner.Text()
 		switch text {
-		case "list rooms":
-			log.Println(server.listRoom())
 		case "list clients":
 			log.Println(server.clientStat())
 		}
-		
-			
 	}
 }
