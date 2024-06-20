@@ -55,7 +55,7 @@
 <body>
     <div id="welcome-container">
         <h1><span class="chit">Chit</span><span class="chat">chat</span></h1>
-        <span>There are currently {} users connecting</span>
+        <span id="stat">There are {} more online</span>
         <form id="welcome-form">
             <input type="text" id="username" required placeholder="Nickname">
         </form>
@@ -63,11 +63,26 @@
     </div>
 
     <script>
+        var users = 0;
+        var stat = document.getElementById('stat');
+        ws = new WebSocket("ws://" + window.location.host + "/ws");
+
         document.getElementById('welcome-form').addEventListener('submit', function (event) {
             event.preventDefault();
             const username = document.getElementById('username').value;
-            sessionStorage.setItem('username', username);
-            window.location.href = 'home.html';
+            if (ws) {
+                return false;
+            }
+            ws = newWebSocket("{{.}}");
+            ws.onopen = function () {
+                ws.send(username);
+                window.location.href = "/home.html";
+            };
+            ws.onclose = function () {
+                ws = null;
+            };
+
+            return false;
         });
     </script>
 </body>
