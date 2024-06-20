@@ -1,13 +1,6 @@
 package main
 
-import "github.com/google/uuid"
-
 type Room struct {
-	id         string
-	name       string
-	locked     bool
-	password   string
-	owner      *Client
 	clients    map[*Client]bool
 	broadcast  chan []byte
 	register   chan *Client
@@ -16,8 +9,6 @@ type Room struct {
 
 func NewRoom(name string) *Room {
 	return &Room{
-		id:         uuid.New().String(),
-		name:       name,
 		clients:    make(map[*Client]bool),
 		broadcast:  make(chan []byte),
 		register:   make(chan *Client),
