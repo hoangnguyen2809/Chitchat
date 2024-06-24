@@ -2,46 +2,42 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
 
-var upgrader = websocket.Upgrader{} // use default options
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 type Client struct {
 	name string
-	room *Room
 	conn *websocket.Conn
+	partner *Client
 	send chan []byte
 }
 
 type Server struct {
 	clients    map[*websocket.Conn]*Client
-	rooms      map[string]*Room
+	waiting    []*Client
+	clientsMutex sync.Mutex
 }
 
 func NewServer() *Server {
 	return &Server{
 		clients:    make(map[*websocket.Conn]*Client),
-		rooms:      make(map[string]*Room),
+		waiting:    make([]*Client, 0),
 	}
-}
-
-func (s *Server) CreateRoom(name string, client *Client, password string) *Room {
-	room := NewRoom(name)
-	room.register <- client
-	room.broadcast <- []byte(client.name + " has joined the room")
-	log.Printf("Room created")
-	go room.Run()
-	return room
 }
 
 func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
@@ -53,27 +49,65 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	//defer the closing of the connection
 	defer c.Close()
+	
 
 	// Read the initial message to get the username
-	_, message, err := c.ReadMessage()
+	_, username, err := c.ReadMessage()
 	if err != nil {
 		log.Println("read:", err)
 		return
 	}
 
-	var initMsg struct {
-		Type string `json:"type"`
-		Name string `json:"name"`
-	}
-
-	if err := json.Unmarshal(message, &initMsg); err != nil {
-		log.Println("json unmarshal:", err)
-		return
-	}
-
-	client := &Client{name: initMsg.Name, conn: c, send: make(chan []byte, 256)}
+	client := &Client{name: string(username), conn: c, send: make(chan []byte, 256)}
+	s.clientsMutex.Lock()
 	s.clients[c] = client
+	log.Printf("New client: %s", username)
+	s.clientsMutex.Unlock()
 
+	s.pairClient(client)
+
+	for {
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			break
+		}
+		log.Printf("recv: %s", message)
+		if client.partner != nil {
+			client.partner.conn.WriteMessage(websocket.TextMessage, message)
+		}
+	}
+
+	s.clientsMutex.Lock()
+	delete(s.clients, c)
+	if client.partner != nil {
+		client.partner.conn.WriteMessage(websocket.TextMessage, []byte("Stranger has disconnected."))
+		client.partner.partner = nil
+		s.pairClient(client.partner)
+	}
+	s.clientsMutex.Unlock()
+
+	log.Printf("Client %s disconnected", client.name)
+	log.Println(s.clientStat())
+
+}
+
+func (s *Server) pairClient(client *Client) {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
+	if len(s.waiting) > 0 {
+		partner := s.waiting[0]
+		s.waiting = s.waiting[1:]
+
+		client.partner = partner
+		partner.partner = client
+
+		client.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger."))
+		partner.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger."))
+	} else {
+		s.waiting = append(s.waiting, client)
+		client.conn.WriteMessage(websocket.TextMessage, []byte("Waiting for a stranger to connect..."))
+	}
 }
 
 func (s *Server) clientStat() string {
@@ -95,7 +129,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.ServeFile(w, r, "./static/welcome.html")
-		} else if r.URL.Path == "/chatbox" {
+		} else if r.URL.Path == "/chatbox.html" {
 			http.ServeFile(w, r, "./static/chatbox.html")
 		} else {
 			http.FileServer(http.Dir("./static")).ServeHTTP(w, r)
