@@ -71,9 +71,9 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
-		log.Printf("recv: %s", message)
 		if client.partner != nil {
-			client.partner.conn.WriteMessage(websocket.TextMessage, message)
+			formattedMessage := fmt.Sprintf("%s: %s", client.name, message)
+			client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formattedMessage))
 		}
 	}
 	s.clientsMutex.Lock()
@@ -106,8 +106,10 @@ func (s *Server) pairClient(client *Client) {
 		//Log
 		log.Printf("Pairing %s with %s", client.name, partner.name)
 
-		client.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger."))
-		partner.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger."))
+		notifyClient := fmt.Sprintf("You are now connected to %s.", partner.name)
+		notifyPartner := fmt.Sprintf("You are now connected to %s.", client.name)
+		client.conn.WriteMessage(websocket.TextMessage, []byte(notifyClient))
+		partner.conn.WriteMessage(websocket.TextMessage, []byte(notifyPartner))
 	} else {
 		s.waiting = append(s.waiting, client)
 		//Log
@@ -131,8 +133,10 @@ func (s *Server) pairWaitingClients() {
 		// Log
 		log.Printf("Pairing %s with %s from waiting list", client.name, partner.name)
 
-		client.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger from the waiting list."))
-		partner.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger from the waiting list."))
+		notifyClient := fmt.Sprintf("You are now connected to %s.", partner.name)
+		notifyPartner := fmt.Sprintf("You are now connected to %s.", client.name)
+		client.conn.WriteMessage(websocket.TextMessage, []byte(notifyClient))
+		partner.conn.WriteMessage(websocket.TextMessage, []byte(notifyPartner))
 	}
 }
 
