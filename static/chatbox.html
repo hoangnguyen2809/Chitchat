@@ -75,7 +75,6 @@
         }
 
         #msg {
-            flex-grow: 1;
             margin: 0 10px;
             padding: 5px;
             border-radius: 5px;
@@ -100,7 +99,7 @@
 
         <div id="log"></div>
         <form id="form">
-            <!-- <button type="stop">Stop</button> -->
+            <button type="stop">Stop</button>
             <input type="text" id="msg" size="64" />
             <input type="submit" value="Send" />
         </form>
@@ -108,48 +107,72 @@
     </div>
 
     <script>
-        let ws;
         const username = localStorage.getItem('username');
-        if (username) {
-            ws = new WebSocket("ws://" + window.location.host + "/ws");
+        var conn;
+        var msg = document.getElementById("msg");
+        var log = document.getElementById("log");
 
-            ws.onopen = function () {
-                ws.send(JSON.stringify({ type: "username", name: username }));
-                console.log("WebSocket connection established");
+        function appendLog(item) {
+            var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+            log.appendChild(item);
+            if (doScroll) {
+                log.scrollTop = log.scrollHeight - log.clientHeight;
+            }
+        }
+
+        document.getElementById("form").onsubmit = function (event) {
+            event.preventDefault();
+
+            if (!conn) {
+                return false;
+            }
+            if (!msg.value.trim()) {
+                return false;
+            }
+            // Append the sent message to the log
+            console.log("You: " + msg.value);
+            var item = document.createElement("div");
+            item.innerText = "You: " + msg.value;
+            appendLog(item);
+
+            // Send the message to the WebSocket server
+            conn.send(msg.value);
+            console.log("Sent: " + msg.value);
+            msg.value = "";
+            return false;
+        };
+
+        if (window["WebSocket"]) {
+            conn = new WebSocket("ws://" + document.location.host + "/ws");
+            if (username) {
+                conn.onopen = function (evt) {
+                    conn.send(username);
+                }
+                console.log("Connected to server");
                 console.log("Username: " + username);
+            } else {
+                window.location.href = "/";
+            }
+
+            conn.onclose = function (evt) {
+                var item = document.createElement("div");
+                item.innerHTML = "<b>Connection closed.</b>";
+                appendLog(item);
             };
 
-            ws.onmessage = function (event) {
-                const log = document.getElementById('log');
-                const message = document.createElement('div');
-                message.textContent = event.data;
-                log.appendChild(message);
-            };
-            ws.onclose = function (event) {
-                if (!event.wasClean) {
-                    console.log("WebSocket connection closed unexpectedly");
-                } else {
-                    console.log("WebSocket connection closed");
+            conn.onmessage = function (evt) {
+                console.log(evt.data);
+                var messages = evt.data.split('\n');
+                for (var i = 0; i < messages.length; i++) {
+                    var item = document.createElement("div");
+                    item.innerText = messages[i];
+                    appendLog(item);
                 }
             };
-
-            document.getElementById('form').addEventListener('submit', function (event) {
-                event.preventDefault();
-                const msg = document.getElementById('msg').value;
-                ws.send(JSON.stringify({ type: "message", text: msg }));
-                document.getElementById('msg').value = '';
-            });
-
-
-            document.getElementById('form').addEventListener('submit', function (event) {
-                event.preventDefault();
-                const msg = document.getElementById('msg').value;
-                ws.send(JSON.stringify({ type: "message", text: msg }));
-                document.getElementById('msg').value = '';
-            });
-
         } else {
-            window.location.href = "/";
+            var item = document.createElement("div");
+            item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
+            appendLog(item);
         }
     </script>
 </body>
