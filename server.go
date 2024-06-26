@@ -78,20 +78,21 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	s.clientsMutex.Lock()
 	delete(s.clients, c)
-	log.Printf("Client %s disconnected, putting their partner %s in waiting list", client.name, client.partner.name)
-	log.Println(s.clientStat())
+	log.Printf("Client %s disconnected", client.name)
 	if client.partner != nil {
 		client.partner.conn.WriteMessage(websocket.TextMessage, []byte("Stranger has disconnected."))
 		client.partner.partner = nil
-		//log
-		log.Printf("Pairing %s with new partner", client.partner.name)
-		s.pairClient(client.partner)
+		log.Printf("Putting %s back in the waiting list", client.partner.name)
+		s.waiting = append(s.waiting, client.partner)
 	}
 	s.clientsMutex.Unlock()
+	s.pairWaitingClients()
 
+	log.Println(s.clientStat())
 }
 
 func (s *Server) pairClient(client *Client) {
+	log.Print("Pairing client")
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
@@ -112,6 +113,26 @@ func (s *Server) pairClient(client *Client) {
 		//Log
 		log.Printf("%s is waiting", client.name)
 		client.conn.WriteMessage(websocket.TextMessage, []byte("Waiting for a stranger to connect..."))
+	}
+}
+
+func (s *Server) pairWaitingClients() {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
+	for len(s.waiting) > 1 {
+		client := s.waiting[0]
+		partner := s.waiting[1]
+		s.waiting = s.waiting[2:]
+
+		client.partner = partner
+		partner.partner = client
+
+		// Log
+		log.Printf("Pairing %s with %s from waiting list", client.name, partner.name)
+
+		client.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger from the waiting list."))
+		partner.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger from the waiting list."))
 	}
 }
 
@@ -177,6 +198,9 @@ func main() {
 		switch text {
 		case "list clients":
 			log.Println(server.clientStat())
+		case "waitings":
+			log.Println(server.waitingList())
 		}
+		
 	}
 }
