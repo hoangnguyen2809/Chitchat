@@ -76,18 +76,18 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			client.partner.conn.WriteMessage(websocket.TextMessage, message)
 		}
 	}
-
 	s.clientsMutex.Lock()
 	delete(s.clients, c)
+	log.Printf("Client %s disconnected, putting their partner %s in waiting list", client.name, client.partner.name)
+	log.Println(s.clientStat())
 	if client.partner != nil {
 		client.partner.conn.WriteMessage(websocket.TextMessage, []byte("Stranger has disconnected."))
 		client.partner.partner = nil
+		//log
+		log.Printf("Pairing %s with new partner", client.partner.name)
 		s.pairClient(client.partner)
 	}
 	s.clientsMutex.Unlock()
-
-	log.Printf("Client %s disconnected", client.name)
-	log.Println(s.clientStat())
 
 }
 
@@ -102,12 +102,31 @@ func (s *Server) pairClient(client *Client) {
 		client.partner = partner
 		partner.partner = client
 
+		//Log
+		log.Printf("Pairing %s with %s", client.name, partner.name)
+
 		client.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger."))
 		partner.conn.WriteMessage(websocket.TextMessage, []byte("You are now connected to a stranger."))
 	} else {
 		s.waiting = append(s.waiting, client)
+		//Log
+		log.Printf("%s is waiting", client.name)
 		client.conn.WriteMessage(websocket.TextMessage, []byte("Waiting for a stranger to connect..."))
 	}
+}
+
+func (s *Server) waitingList() string {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
+	waitingCount := len(s.waiting)
+	waitingList := fmt.Sprintf("There are currently %d clients waiting:\n", waitingCount)
+
+	for _, c := range s.waiting {
+		waitingList += fmt.Sprintf("%s\n", c.name)
+	}
+
+	return waitingList
 }
 
 func (s *Server) clientStat() string {
@@ -115,7 +134,13 @@ func (s *Server) clientStat() string {
 	clientList := fmt.Sprintf("There are currently %d clients connected:\n", clientCount)
 
 	for _, c := range s.clients {
-		clientList += fmt.Sprintf("%-20s %s\n", c.name, c.conn.RemoteAddr().String())
+		var partnerName string
+		if c.partner != nil {
+			partnerName = c.partner.name
+		} else {
+			partnerName = "No partner"
+		}
+		clientList += fmt.Sprintf("%-20s %s %s\n", c.name, c.conn.RemoteAddr().String(), partnerName)
 	}
 
 	return clientList
