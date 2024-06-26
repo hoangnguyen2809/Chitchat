@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -63,7 +61,7 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	s.clients[c] = client
 	log.Printf("New client: %s", username)
 	s.clientsMutex.Unlock()
-
+	s.broadcastClientCount()
 	s.pairClient(client)
 
 	for {
@@ -71,8 +69,9 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
+		log.Printf("recv: %s", message)
 		if client.partner != nil {
-			formattedMessage := fmt.Sprintf("%s: %s", client.name, message)
+			formattedMessage := fmt.Sprintf("[MSG]:[%s]: %s", client.name, message)
 			client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formattedMessage))
 		}
 	}
@@ -80,14 +79,15 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	delete(s.clients, c)
 	log.Printf("Client %s disconnected", client.name)
 	if client.partner != nil {
-		client.partner.conn.WriteMessage(websocket.TextMessage, []byte("Stranger has disconnected."))
+		formatNoti := fmt.Sprintf("[NOTI]: %s has disconnected.", client.name)
+		client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formatNoti))
 		client.partner.partner = nil
 		log.Printf("Putting %s back in the waiting list", client.partner.name)
 		s.waiting = append(s.waiting, client.partner)
 	}
 	s.clientsMutex.Unlock()
-	s.pairWaitingClients()
-
+	s.pairWaitingClients(client)
+	s.broadcastClientCount()
 	log.Println(s.clientStat())
 }
 
@@ -106,22 +106,27 @@ func (s *Server) pairClient(client *Client) {
 		//Log
 		log.Printf("Pairing %s with %s", client.name, partner.name)
 
-		notifyClient := fmt.Sprintf("You are now connected to %s.", partner.name)
-		notifyPartner := fmt.Sprintf("You are now connected to %s.", client.name)
+		notifyClient := fmt.Sprintf("[NOTI]:You are now connected to %s.", partner.name)
+		notifyPartner := fmt.Sprintf("[NOTI]:You are now connected to %s.", client.name)
 		client.conn.WriteMessage(websocket.TextMessage, []byte(notifyClient))
 		partner.conn.WriteMessage(websocket.TextMessage, []byte(notifyPartner))
 	} else {
 		s.waiting = append(s.waiting, client)
 		//Log
 		log.Printf("%s is waiting", client.name)
-		client.conn.WriteMessage(websocket.TextMessage, []byte("Waiting for a stranger to connect..."))
+		client.conn.WriteMessage(websocket.TextMessage, []byte("[NOTI]:Waiting for a stranger to connect..."))
 	}
 }
 
-func (s *Server) pairWaitingClients() {
+func (s *Server) pairWaitingClients(client *Client) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
+	if(len(s.waiting) == 1) {
+		s.waiting = append(s.waiting, client)
+		log.Printf("%s is waiting", client.name)
+		client.conn.WriteMessage(websocket.TextMessage, []byte("[NOTI]:Waiting for a stranger to connect..."))
+	}
 	for len(s.waiting) > 1 {
 		client := s.waiting[0]
 		partner := s.waiting[1]
@@ -133,11 +138,14 @@ func (s *Server) pairWaitingClients() {
 		// Log
 		log.Printf("Pairing %s with %s from waiting list", client.name, partner.name)
 
-		notifyClient := fmt.Sprintf("You are now connected to %s.", partner.name)
-		notifyPartner := fmt.Sprintf("You are now connected to %s.", client.name)
+		notifyClient := fmt.Sprintf("[NOTI]:You are now connected to %s.", partner.name)
+		notifyPartner := fmt.Sprintf("[NOTI]:You are now connected to %s.", client.name)
 		client.conn.WriteMessage(websocket.TextMessage, []byte(notifyClient))
 		partner.conn.WriteMessage(websocket.TextMessage, []byte(notifyPartner))
 	}
+
+	
+	
 }
 
 func (s *Server) waitingList() string {
@@ -152,6 +160,17 @@ func (s *Server) waitingList() string {
 	}
 
 	return waitingList
+}
+
+func (s *Server) broadcastClientCount() {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
+	count := len(s.clients)
+	message := fmt.Sprintf("[COUNT]:%d", count)
+	for _, client := range s.clients {
+		client.conn.WriteMessage(websocket.TextMessage, []byte(message))
+	}
 }
 
 func (s *Server) clientStat() string {
@@ -171,40 +190,4 @@ func (s *Server) clientStat() string {
 	return clientList
 }
 
-func main() {
-	flag.Parse()
-	log.SetFlags(0)
-	server := NewServer()
-	http.HandleFunc("/ws", server.HandleConnection)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			http.ServeFile(w, r, "./static/welcome.html")
-		} else if r.URL.Path == "/chatbox.html" {
-			http.ServeFile(w, r, "./static/chatbox.html")
-		} else {
-			http.FileServer(http.Dir("./static")).ServeHTTP(w, r)
-		}
-	})
 
-	log.Printf("Starting server on %s", *addr)
-	go func() {
-		err := (http.ListenAndServe(*addr, nil))
-		if err != nil {
-			log.Fatalf("Failed to start server: %v", err)
-		} else {
-			log.Println("Server started, waiting for connection")
-		}
-	}()
-
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		text := scanner.Text()
-		switch text {
-		case "list clients":
-			log.Println(server.clientStat())
-		case "waitings":
-			log.Println(server.waitingList())
-		}
-		
-	}
-}
