@@ -143,9 +143,6 @@ func (s *Server) pairWaitingClients(client *Client) {
 		client.conn.WriteMessage(websocket.TextMessage, []byte(notifyClient))
 		partner.conn.WriteMessage(websocket.TextMessage, []byte(notifyPartner))
 	}
-
-	
-	
 }
 
 func (s *Server) waitingList() string {
@@ -162,7 +159,7 @@ func (s *Server) waitingList() string {
 	return waitingList
 }
 
-func (s *Server) broadcastClientCount() {
+func (s *Server) broadcastClientCount() int{
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
@@ -171,6 +168,8 @@ func (s *Server) broadcastClientCount() {
 	for _, client := range s.clients {
 		client.conn.WriteMessage(websocket.TextMessage, []byte(message))
 	}
+
+	return count
 }
 
 func (s *Server) clientStat() string {
