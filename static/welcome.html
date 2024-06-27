@@ -55,7 +55,7 @@
 <body>
     <div id="welcome-container">
         <h1><span class="chit">Chit</span><span class="chat">chat</span></h1>
-        <span id="stat">There are <span id="count">0</span> more online</span>
+        <span id="stat">Start chatting with others now!</span>
         <form id="welcome-form">
             <input type="text" id="username" required placeholder="Nickname">
         </form>
@@ -63,13 +63,6 @@
     </div>
 
     <script>
-        const socket = new WebSocket("ws://" + document.location.host + "/ws");
-        socket.addEventListener('message', function (event) {
-            const message = event.data;
-            if (message.startsWith("[COUNT]:")) {
-                document.getElementById('count').innerText = `${message.split(":")[1]}`;
-            }
-        });
         document.getElementById('welcome-form').addEventListener('submit', function (event) {
             event.preventDefault();
             const username = document.getElementById('username').value;
