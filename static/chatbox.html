@@ -15,6 +15,7 @@
             background-color: #010409;
             margin: 0;
             padding: 0;
+            min-width: 600px;
         }
 
         h1 {
@@ -69,9 +70,23 @@
         }
 
         #form {
-            width: 100%;
-            margin-top: 20px;
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        #form button,
+        #form input[type="submit"] {
+            flex: 1;
+            margin: 5px;
+            max-width: calc(50% - 10vw);
+        }
+
+        #form input[type="text"] {
+            flex: 8;
+            margin: 5px;
+            max-width: calc(80% - 10vw);
         }
 
         #msg {
@@ -89,15 +104,38 @@
         #form input[type="text"]:focus {
             outline: none;
         }
+
+        .top-log {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dot {
+            height: 10px;
+            width: 10px;
+            background-color: green;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .count {
+            color: white;
+        }
     </style>
 </head>
 
 <body>
     <h1><span class="chit">Chit</span><span class="chat">chat</span></h1>
     <div id="main-container">
-        <h2><span class="live">LIVE</span> <span class="box">BOX</span></h2>
+        <div class="top-log">
+            <h2><span class="live">LIVE</span> <span class="box">BOX</span></h2>
+            <div><span class="dot"> </span><span id="count">0</span></div>
+        </div>
 
         <div id="log"></div>
+        <div id="receive"></div>
+        <div id="send"></div>
         <form id="form">
             <button type="stop">Stop</button>
             <input type="text" id="msg" size="64" />
@@ -177,8 +215,7 @@
                 else if (message.startsWith("[COUNT]:")) {
                     console.log("calling")
                     const count = message.split(":")[1];
-                    // Update the count display somewhere if needed
-                    console.log(`Current online count: ${count}`);
+                    document.getElementById('count').innerText = `${message.split(":")[1]}`;
                 }
             };
         } else {
