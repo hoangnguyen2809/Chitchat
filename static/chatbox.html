@@ -137,7 +137,7 @@
         <div id="receive"></div>
         <div id="send"></div>
         <form id="form">
-            <button type="stop">Stop</button>
+            <button type="button" id="stop">Stop</button>
             <input type="text" id="msg" size="64" />
             <input type="submit" value="Send" />
         </form>
@@ -158,6 +158,14 @@
             }
         }
 
+        document.getElementById("stop").onclick = function () {
+            event.preventDefault();
+            if (conn) {
+                conn.send("[STOP]");
+            }
+
+            console.log("Sent: [STOP]");
+        };
         document.getElementById("form").onsubmit = function (event) {
             event.preventDefault();
 
