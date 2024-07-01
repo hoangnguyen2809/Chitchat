@@ -243,14 +243,15 @@
             conn.onmessage = function (evt) {
                 const message = evt.data;
                 if (message.startsWith("[NOTI1]:")) {
-                    busy = false;  // Waiting
+                    busy = false;
                     var item = document.createElement("div");
                     item.innerHTML = `<b>${message.substring(8)}</b>`;
                     appendLog(item);
-                } else if (message.startsWith("[NOTI2]:")) {
-                    busy = true;  // Chatting
+                } else if (message.startsWith("[CONNECT]:")) {
+                    busy = true;
                     var item = document.createElement("div");
-                    item.innerHTML = `<b>${message.substring(8)}</b>`;
+                    const partnerName = message.substring(8);
+                    item.innerHTML = `<b>You are now connected to ${partnerName}</b>`;
                     appendLog(item);
                 } else if (message.startsWith("[MSG]:")) {
                     var item = document.createElement("div");
