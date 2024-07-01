@@ -84,12 +84,10 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
             client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formattedMessage))
         }
     }
-
-    s.clientsMutex.Lock()
     delete(s.clients, c)
+    s.removeFromWaitingList(client)
+    s.clientsMutex.Lock()
     log.Printf("Client %s disconnected", client.name)
-    log.Println(s.clientStat())
-    log.Println(s.waitingList())
     if client.partner != nil {
         formatNoti := fmt.Sprintf("[NOTI1]: %s has disconnected. \n Please wait while we pair you with a new partner", client.name)
         client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formatNoti))
@@ -183,6 +181,18 @@ func (s *Server) waitingList() string {
 	}
 
 	return waitingList
+}
+
+func (s *Server) removeFromWaitingList(client *Client) {
+    s.clientsMutex.Lock()
+    defer s.clientsMutex.Unlock()
+
+    for i, c := range s.waiting {
+        if c == client {
+            s.waiting = append(s.waiting[:i], s.waiting[i+1:]...)
+            break
+        }
+    }
 }
 
 func (s *Server) broadcastClientCount() int{
