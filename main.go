@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 func startServer(server *Server) {
@@ -35,22 +34,17 @@ func main() {
 
 	go startServer(server)
 
-	ticker := time.NewTicker(10 * time.Second)
-	go func() {
-		for range ticker.C {
-			log.Print(server.broadcastClientCount())
-			
-		}
-	}()
+	// Command line interface
+	// 1. Print client statistics
+	// 2. Print waiting list
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := scanner.Text()
 		switch text {
-		case "list clients":
+		case "1":
 			log.Println(server.clientStat())
-		case "waitings":
+		case "2":
 			log.Println(server.waitingList())
 		}
-		
 	}
 }
