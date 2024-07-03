@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <title>Chat Home</title>
     <style>
         body {
@@ -122,6 +123,9 @@
             padding: 5px;
             border-radius: 5px;
             transition: background-color 0.5s, color 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #stop.disabled {
@@ -131,6 +135,22 @@
         #stop.enabled {
             background-color: rgb(146, 0, 0);
             color: white;
+        }
+
+        #stop.disabled .fa-spinner {
+            display: inline-block;
+        }
+
+        #stop.enabled .fa-spinner {
+            display: none;
+        }
+
+        #stop.enabled .stop-text {
+            display: inline;
+        }
+
+        #stop.disabled .stop-text {
+            display: none;
         }
 
         #sendBtn {
@@ -175,6 +195,14 @@
             font-weight: 350;
             margin-bottom: 5px;
         }
+
+        .fa-spinner {
+            color: white;
+        }
+
+        .stop-text {
+            color: rgb(215, 215, 215);
+        }
     </style>
 </head>
 
@@ -188,7 +216,10 @@
 
         <div id="log"></div>
         <form id="form">
-            <button type="button" id="stop" disabled="disabled">Stop</button>
+            <button type="button" id="stop" disabled="disabled">
+                <i class="fa fa-spinner fa-spin"></i>
+                <span class="stop-text">Stop</span>
+            </button>
             <input type="text" id="msg" size="64" autocomplete="off" />
             <input type="submit" id="sendBtn" value="Send" disabled="disabled" />
         </form>
@@ -268,7 +299,7 @@
             }
 
             conn.onclose = function (evt) {
-                //localStorage.clear();
+                localStorage.clear();
             };
 
             conn.onmessage = function (evt) {
