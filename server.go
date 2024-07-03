@@ -18,6 +18,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+// Client represents a connected client
 type Client struct {
     name    string
     conn    *websocket.Conn
@@ -25,18 +26,22 @@ type Client struct {
     send    chan []byte
 }
 
+// Server manages all connected clients and waiting clients
 type Server struct {
     clients      map[*websocket.Conn]*Client
     waiting      []*Client
     clientsMutex sync.Mutex
 }
 
+// NewServer creates a new Server instance
 func NewServer() *Server {
     return &Server{
         clients:  make(map[*websocket.Conn]*Client),
         waiting:  make([]*Client, 0),
     }
 }
+
+// HandleConnection upgrades the HTTP connection to a WebSocket and manages client communication
 func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
     //Upgrades HTTP connection to WebSocket and manages client communication
     c, err := upgrader.Upgrade(w, r, nil)
@@ -98,7 +103,7 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
     s.broadcastClientCount()
 }
 
-
+// handleStopMessage processes the STOP order from a client, adding them to the waiting list and notifying their partner
 func (s *Server) handleStopMessage(client *Client) {
     s.clientsMutex.Lock()
     defer s.clientsMutex.Unlock()
@@ -116,6 +121,8 @@ func (s *Server) handleStopMessage(client *Client) {
         s.waiting = append(s.waiting, client)
     }
 }
+
+// pairClient pairs a client with another waiting client or adds them to the waiting list
 func (s *Server) pairClient(client *Client) {
     s.clientsMutex.Lock()
     defer s.clientsMutex.Unlock()
@@ -137,6 +144,7 @@ func (s *Server) pairClient(client *Client) {
     }
 }
 
+// pairWaitingClients pairs clients from the waiting list
 func (s *Server) pairWaitingClients() {
     s.clientsMutex.Lock()
     defer s.clientsMutex.Unlock()
@@ -156,17 +164,7 @@ func (s *Server) pairWaitingClients() {
     }
 }
 
-func (s *Server) waitingList() string {
-	waitingCount := len(s.waiting)
-	waitingList := fmt.Sprintf("There are currently %d clients waiting:\n", waitingCount)
-
-	for _, c := range s.waiting {
-		waitingList += fmt.Sprintf("%s\n", c.name)
-	}
-
-	return waitingList
-}
-
+// removeFromWaitingList removes a client from the waiting list
 func (s *Server) removeFromWaitingList(client *Client) {
     s.clientsMutex.Lock()
     defer s.clientsMutex.Unlock()
@@ -179,6 +177,19 @@ func (s *Server) removeFromWaitingList(client *Client) {
     }
 }
 
+// waitingList returns a string with the current waiting clients
+func (s *Server) waitingList() string {
+	waitingCount := len(s.waiting)
+	waitingList := fmt.Sprintf("There are currently %d clients waiting:\n", waitingCount)
+
+	for _, c := range s.waiting {
+		waitingList += fmt.Sprintf("%s\n", c.name)
+	}
+
+	return waitingList
+}
+
+// broadcastClientCount sends the current client count to all connected clients
 func (s *Server) broadcastClientCount() int{
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
@@ -192,6 +203,8 @@ func (s *Server) broadcastClientCount() int{
 	return count
 }
 
+
+// clientStat returns a string with the current connected clients and their statuses
 func (s *Server) clientStat() string {
 	clientCount := len(s.clients)
 	clientList := fmt.Sprintf("There are currently %d clients connected:\n", clientCount)
