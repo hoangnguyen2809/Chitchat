@@ -78,7 +78,7 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 			s.pairWaitingClients()
 			continue
         } else if client.partner != nil {
-            formattedMessage := fmt.Sprintf("[MSG]:[%s]: %s", client.name, message)
+            formattedMessage := fmt.Sprintf("[MSG]: %s", message)
             client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formattedMessage))
         }
     }
@@ -91,7 +91,7 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
     s.clientsMutex.Lock()
     log.Printf("Client %s disconnected", client.name)
     if client.partner != nil {
-        formatNoti := fmt.Sprintf("[NOTI1]: %s has disconnected. \n Please wait while we pair you with a new partner", client.name)
+        formatNoti := fmt.Sprintf("[NOTI1]: %s", client.name)
         client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formatNoti))
         client.partner.partner = nil
         log.Printf("Putting %s back in the waiting list", client.partner.name)
@@ -108,7 +108,7 @@ func (s *Server) handleStopMessage(client *Client) {
     defer s.clientsMutex.Unlock()
 
     if client.partner != nil {
-        partnerNoti := fmt.Sprintf("[NOTI1]: %s has stopped the chat.", client.name)
+        partnerNoti := fmt.Sprintf("[NOTI1]: %s ", client.name)
         client.partner.conn.WriteMessage(websocket.TextMessage, []byte(partnerNoti))
         client.partner.partner = nil
 
@@ -117,9 +117,6 @@ func (s *Server) handleStopMessage(client *Client) {
 
     if client != nil {
         client.partner = nil
-        clientNoti := "[NOTI1]: You have stopped the chat."
-        client.conn.WriteMessage(websocket.TextMessage, []byte(clientNoti))
-
         s.waiting = append(s.waiting, client)
     }
 }
