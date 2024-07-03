@@ -33,6 +33,10 @@ Make sure you have Go installed on your machine. You can download and install Go
 
 4. Open `http://localhost:8080/` in your browser to start the chat application.
 
+### Demo
+
+![GIF](./demo.gif)
+
 ### Overview
 - Client Struct: Represents a connected client, including the name, WebSocket connection, partner client, and a channel for sending messages.
 - Server Struct: Manages client connections, pairing clients, and broadcasting messages.
