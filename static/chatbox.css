@@ -1,0 +1,192 @@
+body {
+  font-family: "Roboto Mono", monospace;
+  background-color: #010409;
+  margin: 0;
+  padding: 0;
+  min-width: 600px;
+}
+
+h1 {
+  font-size: 2em;
+  margin: 2vh;
+  user-select: none;
+  text-align: center;
+}
+
+.chit {
+  color: #1b4b4b;
+}
+
+.chat {
+  color: #5a293c;
+}
+
+.live {
+  color: #5f1011;
+}
+
+.box {
+  color: #210d41;
+}
+
+#main-container {
+  width: 50%;
+  height: 80vh;
+  padding: 10px 20px;
+  background-color: #101414;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#chatbox {
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  border-radius: 5px;
+}
+
+#form {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+#form button,
+#form input[type="submit"] {
+  flex: 1;
+  margin: 5px;
+  max-width: calc(50% - 10vw);
+}
+
+#form input[type="text"] {
+  flex: 8;
+  margin: 5px;
+  max-width: calc(80% - 10vw);
+}
+
+#msg {
+  margin: 0 10px;
+  padding: 5px;
+  border-radius: 5px;
+  border: none;
+}
+
+input[type="submit"] {
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#form input[type="text"]:focus {
+  outline: none;
+}
+
+.top-log {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dot {
+  height: 10px;
+  width: 10px;
+  background-color: green;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 2px;
+}
+
+#count {
+  color: rgb(87, 87, 87);
+}
+
+#stop {
+  border: none;
+  padding: 5px;
+  border-radius: 5px;
+  transition: background-color 0.5s, color 0.5s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#stop.disabled {
+  background-color: gray;
+}
+
+#stop.enabled {
+  background-color: rgb(146, 0, 0);
+  color: white;
+}
+
+#stop.disabled .fa-spinner {
+  display: inline-block;
+}
+
+#stop.enabled .fa-spinner {
+  display: none;
+}
+
+#stop.enabled .stop-text {
+  display: inline;
+}
+
+#stop.disabled .stop-text {
+  display: none;
+}
+
+#sendBtn {
+  border: none;
+  transition: background-color 0.5s, color 0.5s;
+}
+
+#log {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 80%;
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  background: #181c24;
+  font-weight: 200;
+  text-align: center;
+}
+
+.sentMsg {
+  background-color: #404c54;
+  color: rgb(213, 213, 213);
+  padding: 5px 10px;
+  border-radius: 10px;
+  align-self: flex-end;
+  margin-right: 20px;
+  text-align: left;
+  font-weight: 350;
+  margin-bottom: 5px;
+}
+
+.receivedMsg {
+  color: rgb(196, 196, 196);
+  background-color: #383434;
+  padding: 5px 10px;
+  border-radius: 10px;
+  text-align: left;
+  align-self: flex-start;
+  margin-left: 20px;
+  font-weight: 350;
+  margin-bottom: 5px;
+}
+
+.fa-spinner {
+  color: white;
+}
+
+.stop-text {
+  color: rgb(215, 215, 215);
+}
