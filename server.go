@@ -58,7 +58,6 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
     client := &Client{name: string(username), conn: c, send: make(chan []byte, 256)}
     s.clientsMutex.Lock()
     s.clients[c] = client
-    log.Printf("New client: %s", username)
     s.clientsMutex.Unlock()
 
     //Update the client count and pair the client
@@ -71,7 +70,6 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
         if err != nil {
             break
         }
-        log.Printf("recv: %s", message)
 
         if string(message) == "[STOP]" {
             s.handleStopMessage(client)
@@ -89,12 +87,10 @@ func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
 
     // Update the client count and pair the waiting clients
     s.clientsMutex.Lock()
-    log.Printf("Client %s disconnected", client.name)
     if client.partner != nil {
         formatNoti := fmt.Sprintf("[NOTI1]: %s", client.name)
         client.partner.conn.WriteMessage(websocket.TextMessage, []byte(formatNoti))
         client.partner.partner = nil
-        log.Printf("Putting %s back in the waiting list", client.partner.name)
         s.waiting = append(s.waiting, client.partner)
     }
     s.clientsMutex.Unlock()
@@ -121,7 +117,6 @@ func (s *Server) handleStopMessage(client *Client) {
     }
 }
 func (s *Server) pairClient(client *Client) {
-    log.Print("Pairing client")
     s.clientsMutex.Lock()
     defer s.clientsMutex.Unlock()
 
@@ -132,23 +127,17 @@ func (s *Server) pairClient(client *Client) {
         client.partner = partner
         partner.partner = client
 
-        // Log
-        log.Printf("Pairing %s with %s", client.name, partner.name)
-
         notifyClient := fmt.Sprintf("[CONNECT]: %s.", partner.name)
         notifyPartner := fmt.Sprintf("[CONNECT]: %s.", client.name)
         client.conn.WriteMessage(websocket.TextMessage, []byte(notifyClient))
         partner.conn.WriteMessage(websocket.TextMessage, []byte(notifyPartner))
     } else {
         s.waiting = append(s.waiting, client)
-        // Log
-        log.Printf("%s is waiting", client.name)
         client.conn.WriteMessage(websocket.TextMessage, []byte("[ONWAIT]"))
     }
 }
 
 func (s *Server) pairWaitingClients() {
-    log.Print("Pairing waiting clients")
     s.clientsMutex.Lock()
     defer s.clientsMutex.Unlock()
 
@@ -159,9 +148,6 @@ func (s *Server) pairWaitingClients() {
 
         client.partner = partner
         partner.partner = client
-
-        // Log
-        log.Printf("Pairing %s with %s from waiting list", client.name, partner.name)
 
         notifyClient := fmt.Sprintf("[CONNECT]: %s.", partner.name)
         notifyPartner := fmt.Sprintf("[CONNECT]: %s.", client.name)
