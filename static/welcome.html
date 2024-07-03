@@ -9,47 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap"
         rel="stylesheet">
     <title>Chitchat</title>
-    <style>
-        body {
-            font-family: "Roboto Mono", monospace;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #161c22;
-            margin: 0;
-        }
-
-        #welcome-container {
-            text-align: center;
-            padding: 20vh;
-            border-radius: 10px;
-        }
-
-        h1 {
-            text-align: center;
-            margin: 2vh;
-            user-select: none;
-            font-size: 5em;
-        }
-
-        .chit {
-            color: #1b4b4b;
-        }
-
-        .chat {
-            color: #5a293c;
-        }
-
-        #welcome-form input[type="text"] {
-            border-radius: 25px;
-            padding: 10px;
-            margin: 20px 0;
-        }
-
-        #welcome-form input[type="text"]:focus {
-            outline: none;
-        }
-    </style>
+    <link rel="stylesheet" href="welcome.css">
 </head>
 
 <body>
@@ -62,13 +22,7 @@
         <input type="submit" form="welcome-form" value="Chat now"></input>
     </div>
 
-    <script>
-        document.getElementById('welcome-form').addEventListener('submit', function (event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value;
-            localStorage.setItem('username', username);
-            window.location.href = "/chatbox.html";
-        });
+    <script src="index.js">
     </script>
 </body>
 
