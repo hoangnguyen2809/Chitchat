@@ -42,7 +42,7 @@
         }
 
         #main-container {
-            width: 60%;
+            width: 50%;
             height: 80vh;
             padding: 10px 20px;
             background-color: #101414;
@@ -59,16 +59,6 @@
             margin: 0;
             width: 100%;
             border-radius: 5px;
-        }
-
-        #log {
-            width: 100%;
-            height: 80%;
-            overflow-y: auto;
-            padding: 10px;
-            box-sizing: border-box;
-            border-radius: 5px;
-            background: #181c24;
         }
 
         #form {
@@ -147,6 +137,44 @@
             border: none;
             transition: background-color 0.5s, color 0.5s;
         }
+
+        #log {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 80%;
+            overflow-y: auto;
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 5px;
+            background: #181c24;
+            font-weight: 200;
+            text-align: center;
+        }
+
+        .sentMsg {
+            background-color: #404c54;
+            color: rgb(213, 213, 213);
+            padding: 5px 10px;
+            border-radius: 10px;
+            align-self: flex-end;
+            margin-right: 20px;
+            text-align: left;
+            font-weight: 350;
+            margin-bottom: 5px;
+        }
+
+        .receivedMsg {
+            color: rgb(196, 196, 196);
+            background-color: #383434;
+            padding: 5px 10px;
+            border-radius: 10px;
+            text-align: left;
+            align-self: flex-start;
+            margin-left: 20px;
+            font-weight: 350;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 
@@ -159,8 +187,6 @@
         </div>
 
         <div id="log"></div>
-        <div id="receive"></div>
-        <div id="send"></div>
         <form id="form">
             <button type="button" id="stop" disabled="disabled">Stop</button>
             <input type="text" id="msg" size="64" autocomplete="off" />
@@ -204,8 +230,14 @@
             event.preventDefault();
             if (conn) {
                 conn.send("[STOP]");
-                updateStopButtonState();
+                updateButtonsState();
             }
+
+            var item = document.createElement("div");
+            item.innerHTML = "<b>You have left the chat</b>";
+            item.style.color = "#9e9e9e";
+            item.style.marginTop = "20px";
+            appendLog(item);
         };
         document.getElementById("form").onsubmit = function (event) {
             event.preventDefault();
@@ -217,7 +249,8 @@
                 return false;
             }
             var item = document.createElement("div");
-            item.innerText = "You: " + msg.value;
+            item.innerText = msg.value;
+            item.classList.add("sentMsg");
             appendLog(item);
             conn.send(msg.value);
             msg.value = "";
@@ -235,27 +268,30 @@
             }
 
             conn.onclose = function (evt) {
-                var item = document.createElement("div");
-                item.innerHTML = "<b>Connection closed.</b>";
-                appendLog(item);
+                //localStorage.clear();
             };
 
             conn.onmessage = function (evt) {
                 const message = evt.data;
+                var item = document.createElement("div");
                 if (message.startsWith("[NOTI1]:")) {
                     busy = false;
-                    var item = document.createElement("div");
-                    item.innerHTML = `<b>${message.substring(8)}</b>`;
+                    item.innerHTML = `<b>${message.substring(8)} has left the chat</b>`;
+                    item.style.color = "#9e9e9e";
+                    item.style.margin = "20px";
+                    item.style.display = "block";
                     appendLog(item);
                 } else if (message.startsWith("[CONNECT]:")) {
                     busy = true;
-                    var item = document.createElement("div");
-                    const partnerName = message.substring(8);
+                    const partnerName = message.substring(10);
                     item.innerHTML = `<b>You are now connected to ${partnerName}</b>`;
+                    item.style.color = "#9e9e9e";
+                    item.style.marginBottom = "20px";
+                    item.style.display = "block";
                     appendLog(item);
                 } else if (message.startsWith("[MSG]:")) {
-                    var item = document.createElement("div");
                     item.innerHTML = message.substring(6);
+                    item.classList.add("receivedMsg");
                     appendLog(item);
                 }
                 else if (message.startsWith("[COUNT]:")) {
